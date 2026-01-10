@@ -48,15 +48,27 @@ const Products = () => {
       try {
         // Fetch Products from Backend
         const prodResponse = await fetch(`${config.API_URL}/products`);
-        const prodData = await prodResponse.json();
-        setProducts(prodData);
-        setFilteredProducts(prodData);
+        let prodData = await prodResponse.json();
+
+        if (Array.isArray(prodData)) {
+          setProducts(prodData);
+          setFilteredProducts(prodData);
+        } else {
+          console.error("Products API did not return array:", prodData);
+          setProducts([]);
+          setFilteredProducts([]);
+        }
 
         // Fetch Categories
         const catResponse = await fetch(`${config.API_URL}/categories`);
         if (catResponse.ok) {
           const catData = await catResponse.json();
-          setCategories(catData);
+          if (Array.isArray(catData)) {
+            setCategories(catData);
+          } else {
+            console.error("Categories API did not return array:", catData);
+            setCategories([]);
+          }
         }
 
       } catch (error) {
@@ -313,7 +325,7 @@ const Products = () => {
 
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-0 mb-8 border-l border-gray-200">
-        {filteredProducts.length > 0 ? (
+        {Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
           filteredProducts.map((product) => {
             const price = getPrice(product);
             const regularPrice = getRegularPrice(product);
