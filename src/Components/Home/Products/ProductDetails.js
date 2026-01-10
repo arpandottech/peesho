@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from '../../../Components/CartContext';
 import config from '../../../config';
+import Logo from "../../../assets/meeshoLogo.svg";
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -235,7 +236,7 @@ const ProductDetails = () => {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center gap-3">
                             <ArrowLeft size={24} className="text-gray-600 cursor-pointer" onClick={() => navigate(-1)} />
-                            <img src="http://localhost:3000/static/media/meeshoLogo.4cdf87f2cf8edd85fc38f15667e93a25.svg" alt="Meesho" className="w-[90px] md:w-[120px]" />
+                            <img src={Logo} alt="Meesho" className="w-[90px] md:w-[120px]" />
                         </div>
                         <div className="flex items-center gap-5">
                             <Search size={22} className="text-[#9F2089] cursor-pointer" onClick={() => setIsSearchOpen(true)} />
