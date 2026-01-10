@@ -14,7 +14,12 @@ const CategoriesBar = () => {
             try {
                 // Fetch child categories
                 const response = await axios.get(`${config.API_URL}/categories`);
-                setCategories(response.data);
+                if (Array.isArray(response.data)) {
+                    setCategories(response.data);
+                } else {
+                    console.error("API did not return an array:", response.data);
+                    setCategories([]);
+                }
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching categories:", error);

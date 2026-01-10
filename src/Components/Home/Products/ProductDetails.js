@@ -570,47 +570,50 @@ const ProductDetails = () => {
 
             {/* Customer Reviews List */}
             <div className="border-t border-gray-100 mb-1 bg-white px-4">
-                {reviews.slice(0, 2).map((review) => (
-                    <div key={review._id} className="py-4 border-b border-gray-100 last:border-0">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                                <img
-                                    src={`https://ui-avatars.com/api/?name=${review.userName}&background=random&color=fff`}
-                                    alt={review.userName}
-                                    className="w-full h-full object-cover"
-                                />
+                {Array.isArray(reviews) && reviews.length > 0 ? (
+                    reviews.slice(0, 2).map((review) => (
+                        <div key={review._id} className="py-4 border-b border-gray-100 last:border-0">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                                    <img
+                                        src={`https://ui-avatars.com/api/?name=${review.userName}&background=random&color=fff`}
+                                        alt={review.userName}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <span className="font-semibold text-[14px] text-gray-800">{review.userName}</span>
                             </div>
-                            <span className="font-semibold text-[14px] text-gray-800">{review.userName}</span>
+
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="bg-[#038D63] text-white px-2 py-0.5 rounded-[4px] text-[14px] font-bold flex items-center gap-1">
+                                    {review.rating}.0 <Star size={10} className="fill-white" />
+                                </div>
+                                <span className="text-gray-300 text-[6px]">•</span>
+                                <span className="text-gray-500 text-[12px]">Posted on {new Date(review.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+
+                            <p className="text-[14px] text-gray-800 mb-3 leading-relaxed">{review.reviewText}</p>
+
+                            {review.images && review.images.length > 0 && (
+                                <div className="flex gap-2 mb-4">
+                                    {review.images.map((img, idx) => (
+                                        <div key={idx} className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                                            <img src={img} alt="Review" className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 text-gray-500 text-[13px] font-medium cursor-pointer group">
+                                <div className="group-hover:bg-gray-100 p-1 -ml-1 rounded transition-colors">
+                                    <ThumbsUp size={18} className="text-gray-500" />
+                                </div>
+                                <span className="mt-0.5">Helpful ({review.helpfulCount})</span>
+                            </div>
                         </div>
-
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="bg-[#038D63] text-white px-2 py-0.5 rounded-[4px] text-[14px] font-bold flex items-center gap-1">
-                                {review.rating}.0 <Star size={10} className="fill-white" />
-                            </div>
-                            <span className="text-gray-300 text-[6px]">•</span>
-                            <span className="text-gray-500 text-[12px]">Posted on {new Date(review.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                        </div>
-
-                        <p className="text-[14px] text-gray-800 mb-3 leading-relaxed">{review.reviewText}</p>
-
-                        {review.images && review.images.length > 0 && (
-                            <div className="flex gap-2 mb-4">
-                                {review.images.map((img, idx) => (
-                                    <div key={idx} className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                                        <img src={img} alt="Review" className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-gray-500 text-[13px] font-medium cursor-pointer group">
-                            <div className="group-hover:bg-gray-100 p-1 -ml-1 rounded transition-colors">
-                                <ThumbsUp size={18} className="text-gray-500" />
-                            </div>
-                            <span className="mt-0.5">Helpful ({review.helpfulCount})</span>
-                        </div>
-                    </div>
-                ))}
+                    ))) : (
+                    <div className="py-4 text-center text-gray-500 text-sm">No reviews yet</div>
+                )}
 
                 {reviews.length > 2 && (
                     <button
