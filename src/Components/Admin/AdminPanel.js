@@ -89,16 +89,18 @@ const AdminPanel = () => {
                 axios.get(`${config.API_URL}/products`),
                 axios.get(`${config.API_URL}/users`)
             ]);
-            setCategories(catRes.data);
-            setParentCategories(parentCatRes.data);
-            setProducts(prodRes.data);
+            setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+            setParentCategories(Array.isArray(parentCatRes.data) ? parentCatRes.data : []);
+            setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
+
+            const users = Array.isArray(userRes.data) ? userRes.data : [];
 
             // Calculate pseudo-stats
             setStats({
-                categories: catRes.data.length,
-                parents: parentCatRes.data.length,
-                products: prodRes.data.length,
-                users: userRes.data.length
+                categories: Array.isArray(catRes.data) ? catRes.data.length : 0,
+                parents: Array.isArray(parentCatRes.data) ? parentCatRes.data.length : 0,
+                products: Array.isArray(prodRes.data) ? prodRes.data.length : 0,
+                users: users.length
             });
 
         } catch (err) {
