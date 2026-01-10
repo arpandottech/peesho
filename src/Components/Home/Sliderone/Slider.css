@@ -1,0 +1,54 @@
+/* Custom styles for the slider */
+.mySwiper {
+    --swiper-pagination-color: #6b46c1; /* Example color for the pagination */
+}
+
+.mySwiper img {
+    height: auto;
+    object-fit: cover; /* Ensures the image fits properly */
+}
+
+/* ScrollingText.css */
+/* Set up container */
+.marquee {
+    overflow: hidden;
+    position: relative;
+    background-color: #970e71; /* Background color */
+    color: #ffffff; /* Text color */
+    padding: 0.5rem; /* Padding */
+  }
+  
+  /* Set up inner content */
+  .marquee__inner {
+    display: flex;
+    white-space: nowrap;
+    width: calc(100% * 2);
+    animation: marquee 15s linear infinite;
+  }
+  
+  /* Define scrolling animation */
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  /* Optional: Add spacing between items */
+  .marquee__inner span {
+    margin-right: 1rem; /* Adjust spacing as needed */
+  }
+
+  .time{
+    border: 1px solid rgb(250, 162, 0);
+    background-color: rgb(255,232,205);
+    display: flex;
+    border-radius: 5px;
+}
+.time p{
+    color: #970e71;
+    font-size: 12px;
+  }
+  
