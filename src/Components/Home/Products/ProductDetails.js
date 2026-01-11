@@ -33,160 +33,9 @@ const ProductDetails = () => {
     const [isAddToCartOpen, setIsAddToCartOpen] = useState(false);
     const [isBuyNow, setIsBuyNow] = useState(false);
     const [similarProducts, setSimilarProducts] = useState([]);
-    const { addToCart } = useCart();
+    const { addToCart, getCartItems } = useCart();
 
-    // Intersection Observer for sticky buttons
-    const { ref: buttonRef, inView, entry } = useInView({
-        threshold: 0.1, // Avoid flickering
-    });
-
-    const [shouldShowSticky, setShouldShowSticky] = useState(true); // Default to true (safe assumption for mobile usually)
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [id]);
-
-    useEffect(() => {
-        // Show sticky triggers:
-        // 1. Initial load: If buttons are below viewport (top > 0)
-        // 2. Scrolling: If buttons are below viewport
-        // Hide triggers:
-        // 1. Buttons come into view
-        // 2. Buttons are passed (scrolled above them)
-
-        if (entry) {
-            const isBelowViewport = entry.boundingClientRect.top > 0;
-            // Show sticky ONLY if we are above the inline buttons (they are below viewport)
-            // AND they are not currently visible (inView handles the overlap)
-            setShouldShowSticky(!inView && isBelowViewport);
-        } else {
-            // Fallback for initial render before observer fires
-            // Assuming buttons are at bottom, so likely show sticky initially
-            setShouldShowSticky(true);
-        }
-    }, [inView, entry]);
-
-    useEffect(() => {
-        // Fetch specific product reviews
-        if (id) {
-            axios.get(`${config.API_URL}/reviews/${id}`)
-                .then(res => setReviews(res.data))
-                .catch(err => console.error("Error fetching reviews", err));
-        }
-
-        // Fetch random products for "People also viewed"
-        axios.get(`${config.API_URL}/products`)
-            .then(res => {
-                const allProducts = res.data;
-                // Shuffle and pick 4
-                const shuffled = allProducts.sort(() => 0.5 - Math.random());
-                setSimilarProducts(shuffled.slice(0, 4));
-            })
-            .catch(err => console.error("Error fetching similar products", err));
-    }, [id]);
-    const scrollRef = useRef(null);
-
-    const handleScroll = () => {
-        if (scrollRef.current) {
-            const { scrollLeft, clientWidth } = scrollRef.current;
-            const index = Math.round(scrollLeft / clientWidth);
-            setActiveImageIndex(index);
-        }
-    };
-
-    const handleWishlistToggle = async () => {
-        if (!product) return;
-        try {
-            const res = await toggleWishlist(product._id);
-            setIsWishlisted(res.isWishlisted);
-        } catch (err) {
-            console.error("Error toggling wishlist", err);
-        }
-    };
-
-    const handleShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: product.title,
-                    text: `Check out this product: ${product.title}`,
-                    url: window.location.href,
-                });
-            } catch (err) {
-                console.log('Error sharing', err);
-            }
-        } else {
-            alert('Share feature is not supported on this browser/device.');
-        }
-    };
-
-    useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const res = await axios.get(`${config.API_URL}/products/${id}`);
-                setProduct(res.data);
-
-                // Track ViewContent
-                trackViewContent(res.data);
-
-                // Check wishlist status
-                const status = await checkWishlistStatus(id);
-                setIsWishlisted(status);
-            } catch (err) {
-                console.error("Error fetching product details", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (id) fetchProduct();
-    }, [id]);
-
-    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
-    if (!product) return <div className="flex justify-center items-center h-screen">Product not found</div>;
-
-    // Helper to get logic for variations
-    const getPrice = () => {
-        if (product.type === 'simple') return product.discountPrice || product.price;
-        if (product.variations?.length) {
-            const min = Math.min(...product.variations.map(v => v.discountPrice || v.price));
-            return min;
-        }
-        return 0;
-    };
-
-    const getOriginalPrice = () => {
-        if (product.type === 'simple') return product.price;
-        if (product.variations?.length) {
-            const min = Math.min(...product.variations.map(v => v.price));
-            return min;
-        }
-        return 0;
-    }
-
-    // Helpers for Similar Products Grid
-    const getProductPrice = (p) => {
-        if (p.type === 'simple') return p.discountPrice || p.price || 0;
-        if (p.variations && p.variations.length > 0) {
-            const prices = p.variations.map(v => v.discountPrice || v.price).filter(p => p);
-            return Math.min(...prices) || 0;
-        }
-        return 0;
-    };
-
-    const getProductRegularPrice = (p) => {
-        if (p.type === 'simple') return p.price || 0;
-        if (p.variations && p.variations.length > 0) {
-            const prices = p.variations.map(v => v.price).filter(p => p);
-            return Math.min(...prices) || 0;
-        }
-        return 0;
-    };
-
-    const handleAddToCart = (buyNow = false) => {
-        setIsBuyNow(buyNow);
-        setIsAddToCartOpen(true);
-    };
+    // ... (lines 38-190)
 
     const confirmAddToCart = () => {
         if (!product) return;
@@ -214,10 +63,11 @@ const ProductDetails = () => {
             }
         }
 
+        const price = getPrice();
         const cartItem = {
             image: product.images?.[0] || 'https://via.placeholder.com/150',
             name: product.title,
-            salePrice: getPrice(),
+            salePrice: price,
             regularPrice: getOriginalPrice(),
             size: selectedSize,
             quantity: 1,
@@ -226,10 +76,18 @@ const ProductDetails = () => {
 
         addToCart(cartItem);
 
+        // Calculate immediate total for Buy Now to avoid context race conditions
+        const currentCart = getCartItems();
+        const currentTotal = currentCart.reduce((total, item) => {
+            const itemPrice = item.salePrice || item.price || 0;
+            return total + (itemPrice * (item.quantity || 1));
+        }, 0);
+        const newTotal = currentTotal + price;
+
         // Pixel Tracking
         if (isBuyNow) {
             trackCheckoutStep('InitiateCheckout');
-            navigate('/address');
+            navigate('/address', { state: { totalPrice: newTotal } });
         } else {
             trackAddToCart(product);
             navigate('/cart');
