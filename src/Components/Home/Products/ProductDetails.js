@@ -227,22 +227,9 @@ const ProductDetails = () => {
 
         addToCart(cartItem);
 
-        // Calculate immediate total for Buy Now to avoid context race conditions
-        const currentCart = getCartItems();
-        const currentTotal = currentCart.reduce((total, item) => {
-            const itemPrice = item.salePrice || item.price || 0;
-            return total + (itemPrice * (item.quantity || 1));
-        }, 0);
-        const newTotal = currentTotal + price;
-
         // Pixel Tracking
-        if (isBuyNow) {
-            trackCheckoutStep('InitiateCheckout');
-            navigate('/address', { state: { totalPrice: newTotal } });
-        } else {
-            trackAddToCart(product);
-            navigate('/cart');
-        }
+        trackAddToCart(product);
+        navigate('/cart');
     }
 
     return (
