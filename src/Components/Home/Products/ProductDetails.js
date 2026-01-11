@@ -9,6 +9,7 @@ import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from '../../../Components/CartContext';
 import config from '../../../config';
 import Logo from "../../../assets/meeshoLogo.svg";
+import { trackViewContent, trackAddToCart, trackCheckoutStep } from '../../../utils/MetaPixel';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -125,6 +126,9 @@ const ProductDetails = () => {
                 const res = await axios.get(`${config.API_URL}/products/${id}`);
                 setProduct(res.data);
 
+                // Track ViewContent
+                trackViewContent(res.data);
+
                 // Check wishlist status
                 const status = await checkWishlistStatus(id);
                 setIsWishlisted(status);
@@ -221,9 +225,13 @@ const ProductDetails = () => {
         };
 
         addToCart(cartItem);
+
+        // Pixel Tracking
         if (isBuyNow) {
+            trackCheckoutStep('InitiateCheckout');
             navigate('/address');
         } else {
+            trackAddToCart(product);
             navigate('/cart');
         }
     }

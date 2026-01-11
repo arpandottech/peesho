@@ -11,9 +11,18 @@ import { useCart } from "../../CartContext";
 const Summary = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { totalPrice, finalAmount, platformFee, paymentMode, selectedOption } = location.state || {};
     const { getCartItems } = useCart();
     const cartItems = getCartItems();
+
+    // Calculate total from cart for fallback
+    const cartTotal = cartItems ? cartItems.reduce((total, item) => {
+        const price = item.salePrice || item.price || 0;
+        return total + (price * (item.quantity || 1));
+    }, 0) : 0;
+
+    const totalPrice = location.state?.totalPrice || cartTotal;
+    const finalAmount = location.state?.finalAmount || totalPrice;
+    const { platformFee, paymentMode, selectedOption } = location.state || {};
 
     // Use cartItems directly from context if available, otherwise use a default mock for display
     const displayItems = (cartItems && cartItems.length > 0) ? cartItems : [{
@@ -74,8 +83,15 @@ const Summary = () => {
         } else {
             // Cash on Delivery - Direct Success
             // Create SUCCESS Order in Backend
-            await createBackendOrder('SUCCESS');
-            navigate("/thankyou");
+            // Create SUCCESS Order in Backend
+            const newOrder = await createBackendOrder('SUCCESS');
+            navigate("/thankyou", {
+                state: {
+                    amount: finalAmount,
+                    products: displayItems,
+                    orderId: newOrder?._id || 'COD-' + Date.now()
+                }
+            });
         }
     };
 

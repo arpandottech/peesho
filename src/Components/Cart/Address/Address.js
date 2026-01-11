@@ -3,6 +3,7 @@ import Firstcart from "../Firstcart/Firstcart";
 import { faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useCart } from "../../CartContext";
 
 const Address = () => {
   const states = [
@@ -46,6 +47,8 @@ const Address = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { getCartItems } = useCart();
+  const cartItems = getCartItems();
   const [formError, setFormError] = useState("");
 
   const handlePayments = (event) => {
@@ -58,7 +61,13 @@ const Address = () => {
     formData.forEach((value, key) => { data[key] = value });
     localStorage.setItem("userAddress", JSON.stringify(data));
 
-    const totalPrice = location.state?.totalPrice || 0;
+    // Calculate total from cart if not passed in state
+    const cartTotal = cartItems.reduce((total, item) => {
+      const price = item.salePrice || item.price || 0;
+      return total + (price * (item.quantity || 1));
+    }, 0);
+
+    const totalPrice = location.state?.totalPrice || cartTotal;
 
     if (form.checkValidity()) {
       navigate("/payments", { state: { totalPrice } });

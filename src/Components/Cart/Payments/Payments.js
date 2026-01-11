@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Firstcart from "../Firstcart/Firstcart";
+import { trackAddPaymentInfo } from "../../../utils/MetaPixel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import gpay from "../../../assets/gpay_icon.svg";
@@ -10,18 +11,30 @@ import "./Payments.css"; // Ensure you have your CSS imported
 import { useLocation } from "react-router-dom";
 import { ChevronDownIcon } from '@heroicons/react/solid';
 import { useNavigate } from 'react-router-dom';
-
+import { useCart } from "../../../Components/CartContext";
 
 
 const Payments = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const totalPrice = location.state?.totalPrice || 0;
+  const { getCartItems } = useCart();
+  const cartItems = getCartItems();
+
+  const cartTotal = cartItems.reduce((total, item) => {
+    const price = item.salePrice || item.price || 0;
+    return total + (price * (item.quantity || 1));
+  }, 0);
+
+  const totalPrice = location.state?.totalPrice || cartTotal;
 
   const [paymentMode, setPaymentMode] = useState("online"); // 'cod' or 'online'
   const [showPriceDetails, setShowPriceDetails] = useState(true);
 
   const [selectedOption, setSelectedOption] = useState("");
+
+  useEffect(() => {
+    trackAddPaymentInfo();
+  }, []);
 
   const handleTitleClick = () => {
     navigate('/address');

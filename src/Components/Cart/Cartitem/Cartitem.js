@@ -5,6 +5,8 @@ import safe from '../../../assets/Safe.webp'
 import { useCart } from '../../CartContext';
 import { ChevronRight, Clock, X } from 'lucide-react';
 
+import { trackCheckoutStep } from '../../../utils/MetaPixel';
+
 const Cartitem = () => {
   const navigate = useNavigate();
   const { getCartItems, removeFromCart } = useCart();
@@ -38,6 +40,7 @@ const Cartitem = () => {
   };
 
   const handleContinue = () => {
+    trackCheckoutStep('InitiateCheckout');
     navigate('/address', { state: { totalPrice } });
   };
 

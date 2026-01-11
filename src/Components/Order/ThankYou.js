@@ -1,10 +1,19 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { trackPurchase } from '../../utils/MetaPixel';
 
 const ThankYou = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { amount, products, orderId } = location.state || {};
+
+    useEffect(() => {
+        if (amount && products && orderId) {
+            trackPurchase(orderId, amount, products);
+        }
+    }, [amount, products, orderId]);
 
     return (
         <div className="bg-gray-50 min-h-screen font-dm flex flex-col items-center justify-center p-4">
