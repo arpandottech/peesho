@@ -11,6 +11,7 @@ import {
   faBars,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
+import { useBrand } from "../../BrandContext"; // Import Brand Context
 import { useCart } from "../CartContext";
 import AddressModal from "./AddressModal";
 import CategoriesBar from "./CategoriesBar";
@@ -18,9 +19,17 @@ import CategoryDrawer from "../Category/CategoryDrawer";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { getCartItems } = useCart(); // Access the cart context
-  const cartItems = getCartItems(); // Get the cart items
+  const { getCartItems } = useCart();
+  const { brandConfig } = useBrand(); // Get Brand Config
+  const cartItems = getCartItems();
   const cartCount = cartItems.length;
+
+  // Brand Assets
+  const brandLogo = brandConfig?.theme?.logoUrl || Logo;
+  const primaryColor = brandConfig?.theme?.primaryColor || "#9f2089";
+  const secondaryColor = brandConfig?.theme?.primaryColor || "#f43397"; // Using primary for both or differentiate if needed
+  const brandName = brandConfig?.brand_name || "Meesho";
+
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState("Add delivery location to check extra discount");
@@ -62,25 +71,30 @@ const Navbar = () => {
           </div>
           <img
             onClick={heandleLogo}
-            className="cursor-pointer w-[120px] max-sm:w-[90px]"
-            src={Logo}
-            alt="Meesho"
+            className="cursor-pointer w-[120px] max-sm:w-[90px] object-contain"
+            src={brandLogo}
+            alt={brandName}
           />
         </div>
         <div className="flex gap-4 items-center relative">
           <div onClick={() => navigate('/')} className="cursor-pointer">
             <FontAwesomeIcon
               icon={faHeart}
-              className="text-xl text-[#f43397]"
+              className="text-xl"
+              style={{ color: secondaryColor }}
             />
           </div>
           <div onClick={() => navigate('/cart')} className="relative cursor-pointer">
             <FontAwesomeIcon
               icon={faShoppingCart}
-              className="text-xl text-[#9f2089]"
+              className="text-xl"
+              style={{ color: primaryColor }}
             />
             {cartCount > 0 && (
-              <span className="absolute top-[-8px] right-[-8px] bg-[#f43397] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+              <span
+                className="absolute top-[-8px] right-[-8px] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5"
+                style={{ backgroundColor: secondaryColor }}
+              >
                 {cartCount}
               </span>
             )}

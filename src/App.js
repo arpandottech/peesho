@@ -1,101 +1,105 @@
 import './App.css';
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { lazy, Suspense, useEffect } from 'react';
 import Navbar from './Components/Navbar/Navbar';
-import Home from './Components/Home';
-import ProductDetails from './Components/Home/Products/ProductDetails';
-import Details from './Components/Details';
-import Wishlist from './Components/Wishlist/Wishlist';
-import ShopPage from './Components/Shop/ShopPage';
-import CategoryPage from './Components/Category/CategoryPage';
-import Categories from './Components/Category/Categories';
-import MyOrders from './Components/Order/MyOrders';
-import Help from './Components/Help/Help';
-import SearchResults from './Components/Home/SearchResults';
-
-import Cart from './Components/Cart';
-import Addcart from './Components/Addcart/Addcart';
-import Address from './Components/Cart/Address/Address';
 import { CartProvider } from './Components/CartContext';
-import Payments from './Components/Cart/Payments/Payments';
-import Summary from './Components/Cart/Summary/Summary';
-import AdminPanel from './Components/Admin/AdminPanel';
-import AdminLogin from './Components/Admin/AdminLogin';
+import { BrandProvider, useBrand } from './BrandContext';
 import ProtectedRoute from './Components/Admin/ProtectedRoute';
-import ThankYou from './Components/Order/ThankYou';
-import PaymentPending from './Components/Order/PaymentPending';
+import { trackPageView } from './utils/MetaPixel';
 
-import { initPixel, trackPageView } from './utils/MetaPixel'; // Import Pixel Utils
-import { useEffect } from 'react'; // Add useEffect
+// Lazy-loaded route components
+const Home = lazy(() => import('./Components/Home'));
+const ProductDetails = lazy(() => import('./Components/Home/Products/ProductDetails'));
+const Details = lazy(() => import('./Components/Details'));
+const Wishlist = lazy(() => import('./Components/Wishlist/Wishlist'));
+const ShopPage = lazy(() => import('./Components/Shop/ShopPage'));
+const CategoryPage = lazy(() => import('./Components/Category/CategoryPage'));
+const Categories = lazy(() => import('./Components/Category/Categories'));
+const MyOrders = lazy(() => import('./Components/Order/MyOrders'));
+const Help = lazy(() => import('./Components/Help/Help'));
+const SearchResults = lazy(() => import('./Components/Home/SearchResults'));
+const Cart = lazy(() => import('./Components/Cart'));
+const Addcart = lazy(() => import('./Components/Addcart/Addcart'));
+const Address = lazy(() => import('./Components/Cart/Address/Address'));
+const Payments = lazy(() => import('./Components/Cart/Payments/Payments'));
+const Summary = lazy(() => import('./Components/Cart/Summary/Summary'));
+const MaintenancePage = lazy(() => import('./Components/MaintenancePage'));
+const AdminPanel = lazy(() => import('./Components/Admin/AdminPanel'));
+const AdminLogin = lazy(() => import('./Components/Admin/AdminLogin'));
+const ThankYou = lazy(() => import('./Components/Order/ThankYou'));
+const PaymentPending = lazy(() => import('./Components/Order/PaymentPending'));
+const PaymentFailed = lazy(() => import('./Components/Order/PaymentFailed'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex h-screen items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#9F2089] mx-auto mb-4"></div>
+      <p className="text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const location = useLocation();
-
-  // Initialize Pixel and Track Page Views on Route Change
-  useEffect(() => {
-    // Init only runs once, but trackPageView needs to run on location change.
-    // Ideally Init runs once in App root.
-    // We can check if it's already initialized or just re-run safe init logic (our util handles duplicate script logic somewhat, but standard approach is safer).
-
-    // Actually, standard is: Init once. PageView every route.
-  }, []);
+  const { maintenanceMode, loading } = useBrand();
 
   // Track PageView on route change
   useEffect(() => {
-    // On first load, initPixel handles the first PageView. 
-    // But for React Router, we need to track manual updates.
-    // We'll safeguard inside util or just track here.
     trackPageView();
   }, [location]);
 
+  if (loading) return <LoadingFallback />;
+  if (maintenanceMode) return <Suspense fallback={<LoadingFallback />}><MaintenancePage /></Suspense>;
+
   // Hide Navbar if path starts with /bhikha or ...
-  const shouldHideNavbar = location.pathname.startsWith('/bhikha') || location.pathname.startsWith('/product/') || location.pathname.startsWith('/shop') || location.pathname.startsWith('/category/') || location.pathname === '/cart' || location.pathname === '/address' || location.pathname === '/payments' || location.pathname === '/summary' || location.pathname === '/thankyou' || location.pathname === '/payment-pending' || location.pathname === '/categories' || location.pathname === '/orders' || location.pathname === '/help' || location.pathname === '/search';
+  const shouldHideNavbar = location.pathname.startsWith('/bhikha') || location.pathname.startsWith('/product/') || location.pathname.startsWith('/shop') || location.pathname.startsWith('/category/') || location.pathname === '/cart' || location.pathname === '/address' || location.pathname === '/payments' || location.pathname === '/summary' || location.pathname === '/thankyou' || location.pathname === '/payment-pending' || location.pathname === '/payment-failed' || location.pathname === '/categories' || location.pathname === '/orders' || location.pathname === '/help' || location.pathname === '/search';
 
   return (
     <>
       {!shouldHideNavbar && <Navbar />}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/details" element={<Details />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path='/address' element={<Address />} />
-        <Route path='/payments' element={<Payments />} />
-        <Route path='/summary' element={<Summary />} />
-        <Route path='/thankyou' element={<ThankYou />} />
-        <Route path='/payment-pending' element={<PaymentPending />} />
-        <Route path="/category/:categoryId" element={<CategoryPage />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/orders" element={<MyOrders />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/search" element={<SearchResults />} />
-        <Route path="/addcart" element={<Addcart />} />
-        <Route path="/bhikha/login" element={<AdminLogin />} />
-        <Route path="/bhikha" element={
-          <ProtectedRoute>
-            <AdminPanel />
-          </ProtectedRoute>
-        } />
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/details" element={<Details />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path='/address' element={<Address />} />
+          <Route path='/payments' element={<Payments />} />
+          <Route path='/summary' element={<Summary />} />
+          <Route path='/thankyou' element={<ThankYou />} />
+          <Route path='/payment-pending' element={<PaymentPending />} />
+          <Route path='/payment-failed' element={<PaymentFailed />} />
+          <Route path="/category/:categoryId" element={<CategoryPage />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/orders" element={<MyOrders />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/search" element={<SearchResults />} />
+          <Route path="/addcart" element={<Addcart />} />
+          <Route path="/bhikha/login" element={<AdminLogin />} />
+          <Route path="/bhikha" element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Suspense>
     </>
   );
 }
 
 function App() {
-
-  useEffect(() => {
-    initPixel();
-  }, []);
-
   return (
     <>
-      <CartProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
-      </CartProvider>
-
+      <BrandProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </CartProvider>
+      </BrandProvider>
     </>
   );
 }

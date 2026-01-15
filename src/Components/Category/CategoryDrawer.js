@@ -75,7 +75,7 @@ const CategoryDrawer = ({ isOpen, onClose }) => {
                                         }`}
                                 >
                                     <div className={`w-12 h-12 rounded-full overflow-hidden mb-1 border ${selectedParent === parent._id ? 'border-[#9F2089]' : 'border-gray-200'}`}>
-                                        <img src={parent.image || 'https://via.placeholder.com/50'} alt={parent.name} className="w-full h-full object-cover" />
+                                        <img src={parent.image || 'https://via.placeholder.com/50'} alt={parent.name} loading="lazy" className="w-full h-full object-cover" />
                                     </div>
                                     <span className={`text-[10px] text-center font-medium leading-tight ${selectedParent === parent._id ? 'text-[#9F2089] font-bold' : 'text-gray-600'}`}>
                                         {parent.name}
@@ -105,7 +105,7 @@ const CategoryDrawer = ({ isOpen, onClose }) => {
                                                 }}
                                             >
                                                 <div className="w-16 h-16 rounded-full border border-pink-100 overflow-hidden mb-2 group-hover:border-[#9F2089] transition-colors">
-                                                    <img src={cat.image || 'https://via.placeholder.com/64'} alt={cat.name} className="w-full h-full object-cover" />
+                                                    <img src={cat.image || 'https://via.placeholder.com/64'} alt={cat.name} loading="lazy" className="w-full h-full object-cover" />
                                                 </div>
                                                 <span className="text-[11px] text-center text-gray-700 font-medium leading-tight line-clamp-2 px-1">
                                                     {cat.name}

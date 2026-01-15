@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { TrashIcon } from '@heroicons/react/solid';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import safe from '../../../assets/Safe.webp'
 import { useCart } from '../../CartContext';
 import { ChevronRight, Clock, X } from 'lucide-react';

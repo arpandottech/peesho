@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Heart, ShoppingCart, Share2, Star } from 'lucide-react';
+import { ArrowLeft, Search, Heart, ShoppingCart, Star } from 'lucide-react';
 import axios from 'axios';
 import config from '../../config';
 
 const ShopPage = () => {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [activeTab, setActiveTab] = useState('all'); // To mimic tabs if needed
     const [loading, setLoading] = useState(true);
 
     // Hardcoded Shop Details as per request

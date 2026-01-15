@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import config from '../../config';
 import {
+    Globe,
     LayoutDashboard,
     Edit,
     Package,
@@ -12,12 +13,17 @@ import {
     ShoppingBag,
     Menu,
     X,
+    FileText,
     LogOut,
-    ChevronDown
+    ChevronDown,
+    CheckCircle,
+    AlertTriangle
 } from 'lucide-react';
 import JoditEditor from 'jodit-react';
 
 const AdminPanel = () => {
+    // Force rebuild
+    console.log("AdminPanel Loaded");
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -26,7 +32,8 @@ const AdminPanel = () => {
     const [categories, setCategories] = useState([]);
     const [parentCategories, setParentCategories] = useState([]);
     const [products, setProducts] = useState([]);
-    const [stats, setStats] = useState({ products: 0, categories: 0, parents: 0, users: 0 });
+    const [orders, setOrders] = useState([]); // Add Order State
+    const [stats, setStats] = useState({ products: 0, categories: 0, parents: 0, users: 0, orders: 0 });
 
     // User Form State
     const [userEmail, setUserEmail] = useState('');
@@ -53,7 +60,6 @@ const AdminPanel = () => {
     const editor = useRef(null);
 
     // Jodit Config
-    // Jodit Config
     const editorConfig = useMemo(() => ({
         readonly: false,
         placeholder: 'Start typing...',
@@ -69,9 +75,72 @@ const AdminPanel = () => {
     const [hasSize, setHasSize] = useState(false);
     const [colors, setColors] = useState('');
     const [sizes, setSizes] = useState('');
+    // Variation State
     const [generatedVariations, setGeneratedVariations] = useState([]);
 
-    // Review Form State
+    // Reconciliation State
+    const [selectedDomain, setSelectedDomain] = useState('All');
+
+    const [domains, setDomains] = useState([]);
+
+    useEffect(() => {
+        if (activeTab === 'domains') {
+            fetchDomains();
+            const interval = setInterval(fetchDomains, 5000); // Poll status every 5s
+            return () => clearInterval(interval);
+        }
+    }, [activeTab]);
+
+    const fetchDomains = async () => {
+        try {
+            const res = await axios.get(`${config.API_URL}/domains`);
+            setDomains(res.data);
+        } catch (err) {
+            console.error("Failed to fetch domains", err);
+        }
+    };
+
+    const handleAddDomain = async (domain) => {
+        const meta_pixel_id = prompt("Enter Meta Pixel ID for this domain (Optional):");
+        try {
+            await axios.post(`${config.API_URL}/domains`, { domain_name: domain, meta_pixel_id });
+            fetchDomains();
+            alert("Domain queued for setup.");
+        } catch (err) {
+            alert("Failed to add domain: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleToggleDomain = async (id, currentStatus) => {
+        try {
+            // Toggle between 'active' and 'inactive'
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            await axios.put(`${config.API_URL}/domains/${id}/toggle`, { status: newStatus });
+            fetchDomains();
+        } catch (err) {
+            alert("Failed to toggle: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleRetryDomain = async (id) => {
+        try {
+            await axios.post(`${config.API_URL}/domains/${id}/retry`);
+            fetchDomains();
+            alert("Retry queued.");
+        } catch (err) {
+            alert("Failed to retry: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleDeleteDomain = async (id) => {
+        if (!window.confirm("Are you sure? This will remove the domain from the panel but DNS must be removed manually.")) return;
+        try {
+            await axios.delete(`${config.API_URL}/domains/${id}`);
+            fetchDomains();
+        } catch (err) {
+            alert("Failed to delete domain");
+        }
+    };
     const [reviewProduct, setReviewProduct] = useState('');
     const [reviewText, setReviewText] = useState('');
     const [reviewImage, setReviewImage] = useState('');
@@ -83,24 +152,26 @@ const AdminPanel = () => {
 
     const fetchResources = async () => {
         try {
-            const [catRes, parentCatRes, prodRes, userRes] = await Promise.all([
+            const [catRes, parentCatRes, prodRes, userRes, orderRes] = await Promise.all([
                 axios.get(`${config.API_URL}/categories`),
                 axios.get(`${config.API_URL}/parent-categories`),
                 axios.get(`${config.API_URL}/products`),
-                axios.get(`${config.API_URL}/users`)
+                axios.get(`${config.API_URL}/users`),
+                axios.get(`${config.API_URL}/orders`) // Fetch Orders
             ]);
             setCategories(Array.isArray(catRes.data) ? catRes.data : []);
             setParentCategories(Array.isArray(parentCatRes.data) ? parentCatRes.data : []);
             setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
+            setOrders(Array.isArray(orderRes.data) ? orderRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []);
 
             const users = Array.isArray(userRes.data) ? userRes.data : [];
 
-            // Calculate pseudo-stats
             setStats({
                 categories: Array.isArray(catRes.data) ? catRes.data.length : 0,
                 parents: Array.isArray(parentCatRes.data) ? parentCatRes.data.length : 0,
                 products: Array.isArray(prodRes.data) ? prodRes.data.length : 0,
-                users: users.length
+                users: users.length,
+                orders: Array.isArray(orderRes.data) ? orderRes.data.length : 0
             });
 
         } catch (err) {
@@ -114,6 +185,21 @@ const AdminPanel = () => {
     };
 
     // --- Handlers ---
+    const handleManualReviewToggle = async (order) => {
+        try {
+            // Optimistic Update
+            const updated = orders.map(o => o._id === order._id ? { ...o, isManualReviewNeeded: !o.isManualReviewNeeded } : o);
+            setOrders(updated);
+
+            // Call API to persist
+            await axios.put(`${config.API_URL}/orders/${order._id}/manual-review`, { isManualReviewNeeded: !order.isManualReviewNeeded });
+        } catch (err) {
+            console.error("Failed to toggle review flag", err);
+            // Revert on error
+            fetchResources();
+        }
+    };
+
     const handleUserSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -323,10 +409,109 @@ const AdminPanel = () => {
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                         <StatCard title="Total Products" value={stats.products} icon={<Package className="text-blue-500" />} />
-                        <StatCard title="Total orders" value="0" icon={<Package className="text-blue-500" />} />
+                        <StatCard title="Total orders" value={stats.orders} icon={<FileText className="text-blue-500" />} />
                         <StatCard title="Parent Categories" value={stats.parents} icon={<Layers className="text-purple-500" />} />
                         <StatCard title="Child Categories" value={stats.categories} icon={<Grid className="text-green-500" />} />
                         <StatCard title="Total Users" value={stats.users} icon={<Users className="text-orange-500" />} />
+                    </div>
+                );
+            case 'reconciliation':
+                const uniqueDomains = ['All', ...new Set(orders.map(o => o.domain ? new URL(o.domain).hostname : 'Unknown').filter(d => d !== 'Unknown'))];
+                const filteredOrders = selectedDomain === 'All'
+                    ? orders
+                    : orders.filter(o => o.domain && new URL(o.domain).hostname === selectedDomain);
+                return (
+                    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 font-bold text-gray-800 flex justify-between items-center">
+                            <span>Payment Reconciliation</span>
+
+                            <select
+                                value={selectedDomain}
+                                onChange={(e) => setSelectedDomain(e.target.value)}
+                                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-[#9F2089]"
+                            >
+                                {uniqueDomains.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 text-gray-600 text-sm">
+                                    <tr>
+                                        <th className="p-3 border-b">Date</th>
+                                        <th className="p-3 border-b">Order ID</th>
+                                        <th className="p-3 border-b">Txn ID</th>
+                                        <th className="p-3 border-b">Amount</th>
+                                        <th className="p-3 border-b">Domain / Pixel</th>
+                                        <th className="p-3 border-b">Status</th>
+                                        <th className="p-3 border-b">Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredOrders.map(order => {
+                                        const isIssue = ['PAYMENT_FAILED', 'PAYMENT_ABANDONED'].includes(order.status);
+                                        const isPending = order.status === 'PAYMENT_PENDING';
+
+                                        let bgClass = '';
+                                        if (isIssue) bgClass = 'bg-red-50 hover:bg-red-100';
+                                        else if (isPending) bgClass = 'bg-yellow-50 hover:bg-yellow-100';
+                                        else bgClass = 'hover:bg-gray-50';
+
+                                        return (
+                                            <tr key={order._id} className={`border-b ${bgClass}`}>
+                                                <td className="p-3 text-sm text-gray-600">
+                                                    {new Date(order.createdAt).toLocaleDateString()}
+                                                    <div className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleTimeString()}</div>
+                                                </td>
+                                                <td className="p-3 text-xs font-mono text-gray-500">
+                                                    {order._id.slice(-6).toUpperCase()}
+                                                    {order.riskMetadata?.flagged && (
+                                                        <div className="group relative inline-block ml-2 align-middle">
+                                                            <AlertTriangle size={14} className="text-red-600 cursor-help" />
+                                                            <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block w-40 bg-black text-white text-[10px] p-2 rounded z-20">
+                                                                <p className="font-bold border-b border-gray-700 pb-1 mb-1">Risk Detected</p>
+                                                                <ul className="list-disc pl-3">
+                                                                    {order.riskMetadata.reasons.map((r, i) => <li key={i}>{r.replace(/_/g, ' ')}</li>)}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 text-xs font-mono">{order.transactionId || 'N/A'}</td>
+                                                <td className="p-3 font-bold text-gray-700">₹{order.totalAmount}</td>
+                                                <td className="p-3 text-sm">
+                                                    <div className="text-blue-600">{order.domain ? new URL(order.domain).hostname : 'N/A'}</div>
+                                                    <div className="text-[10px] text-gray-400 font-mono">Pixel: {order.pixelId || 'N/A'}</div>
+                                                </td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'PAYMENT_SUCCESS' ? 'bg-green-100 text-green-700' :
+                                                        order.status === 'PAYMENT_FAILED' ? 'bg-red-100 text-red-700' :
+                                                            order.status === 'PAYMENT_ABANDONED' ? 'bg-gray-200 text-gray-600' :
+                                                                'bg-yellow-100 text-yellow-700'
+                                                        }`}>
+                                                        {order.status.replace('PAYMENT_', '')}
+                                                    </span>
+                                                    {order.retryAttempts > 0 && (
+                                                        <div className="text-[10px] text-gray-500 mt-1">Retries: {order.retryAttempts}</div>
+                                                    )}
+                                                </td>
+                                                <td className="p-3">
+                                                    <label className="flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={order.isManualReviewNeeded || false}
+                                                            onChange={() => handleManualReviewToggle(order)}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 relative"></div>
+                                                        <span className="ml-2 text-xs text-gray-500">Flag</span>
+                                                    </label>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 );
             case 'product':
@@ -551,6 +736,148 @@ const AdminPanel = () => {
                         </div>
                     </div>
                 );
+            case 'domains':
+                return (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">Domain Management</h2>
+                                <p className="text-sm text-gray-500">Manage custom domains for your store front.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const domain = prompt("Enter new domain (e.g., shop.example.com):");
+                                    if (domain) handleAddDomain(domain);
+                                }}
+                                className="bg-[#9F2089] text-white px-4 py-2 rounded shadow hover:bg-[#7a1869] flex items-center gap-2"
+                            >
+                                <Globe size={16} />
+                                + Add Domain
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 border-b">
+                                    <tr>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Domain</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Setup Progress</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Site Status</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {domains && domains.map(d => {
+                                        // Determine Setup Stage
+                                        let setupStage = 'Initializing';
+                                        let setupColor = 'text-yellow-600';
+                                        let showDnsWarning = false;
+
+                                        if (d.apache_status === 'pending') {
+                                            setupStage = 'Configuring Server...';
+                                        } else if (d.apache_status === 'failed') {
+                                            setupStage = 'Server Config Failed';
+                                            setupColor = 'text-red-600';
+                                        } else if (d.ssl_status === 'pending') {
+                                            setupStage = 'Verifying DNS & Issuing SSL...';
+                                            showDnsWarning = true; // Likely waiting for DNS
+                                        } else if (d.ssl_status === 'failed') {
+                                            setupStage = 'SSL Failed (Check DNS)';
+                                            setupColor = 'text-red-600';
+                                            showDnsWarning = true;
+                                        } else if (d.ssl_status === 'active') {
+                                            setupStage = 'Ready';
+                                            setupColor = 'text-green-600';
+                                        }
+
+                                        return (
+                                            <tr key={d._id} className="border-b hover:bg-gray-50">
+                                                <td className="p-4">
+                                                    <div className="font-medium text-gray-800">{d.domain_name}</div>
+                                                    <div className="text-xs text-gray-400 mt-1">Pixel ID: {d.meta_pixel_id || 'Not Set'}</div>
+                                                    {showDnsWarning && (
+                                                        <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-50 px-2 py-1 rounded mt-1 w-fit">
+                                                            <AlertTriangle size={10} />
+                                                            <span>Ensure DNS points to this server IP</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* Unified Setup Progress */}
+                                                <td className="p-4">
+                                                    <div className={`text-sm font-bold ${setupColor} flex items-center gap-2`}>
+                                                        {setupColor.includes('yellow') && <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />}
+                                                        {setupColor.includes('green') && <CheckCircle size={14} />}
+                                                        {setupStage}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 mt-1">
+                                                        Apache: {d.apache_status} | SSL: {d.ssl_status}
+                                                    </div>
+                                                </td>
+
+                                                {/* Site Status Toggle */}
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <label className={`relative inline-flex items-center cursor-pointer ${setupStage !== 'Ready' ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={d.status === 'active'}
+                                                                onChange={() => handleToggleDomain(d._id, d.status)}
+                                                                className="sr-only peer"
+                                                                disabled={setupStage !== 'Ready'}
+                                                            />
+                                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                                        </label>
+                                                        <span className={`text-xs font-bold ${d.status === 'active' ? 'text-green-600' : 'text-gray-500'}`}>
+                                                            {d.status === 'active' ? 'Live' : 'Maintenance Mode'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                <td className="p-4 text-right">
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        {(d.apache_status === 'failed' || d.ssl_status === 'failed') && (
+                                                            <button
+                                                                onClick={() => handleRetryDomain(d._id)}
+                                                                className="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-xs transition-colors"
+                                                            >
+                                                                Retry Setup
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDeleteDomain(d._id)}
+                                                            className="text-red-500 hover:text-red-700 text-xs font-medium"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {(!domains || domains.length === 0) && (
+                                        <tr>
+                                            <td colSpan="4" className="p-8 text-center text-gray-400 italic">
+                                                No domains attached. improved setup visibility.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="mt-6 bg-blue-50 p-4 rounded-lg text-xs text-blue-700 flex items-start gap-2">
+                            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                            <div>
+                                <strong>Setup Guide:</strong>
+                                <ul className="list-disc list-inside mt-1 space-y-1">
+                                    <li>Add your domain here (e.g., <code>myshop.com</code>).</li>
+                                    <li>Go to your Domain Registrar (Godaddy, Namecheap) and point the <strong>A Record</strong> to this server's IP.</li>
+                                    <li>The system will automatically configure SSL (HTTPS) once DNS propagates (usually 1 hour).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                );
             case 'parent':
                 return (
                     <div className="space-y-6">
@@ -665,10 +992,12 @@ const AdminPanel = () => {
 
                     <div className="pt-4 text-gray-500 text-xs font-bold uppercase tracking-wider">Manage Business</div>
 
+                    <NavItem icon={<FileText size={20} />} label="Reconciliation" active={activeTab === 'reconciliation'} onClick={() => { setActiveTab('reconciliation'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Package size={20} />} label="Add Product" active={activeTab === 'product'} onClick={() => { setActiveTab('product'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<ShoppingBag size={20} />} label="All Products" active={activeTab === 'all-products'} onClick={() => { setActiveTab('all-products'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Layers size={20} />} label="Parent Categories" active={activeTab === 'parent'} onClick={() => { setActiveTab('parent'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Grid size={20} />} label="Child Categories" active={activeTab === 'child'} onClick={() => { setActiveTab('child'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Globe size={20} />} label="Domains" active={activeTab === 'domains'} onClick={() => { setActiveTab('domains'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Users size={20} />} label="Review" active={activeTab === 'reviews'} onClick={() => { setActiveTab('reviews'); setIsSidebarOpen(false); }} />
 
                     <div className="pt-4 text-gray-500 text-xs font-bold uppercase tracking-wider">Settings</div>

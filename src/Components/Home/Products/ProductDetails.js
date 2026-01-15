@@ -603,7 +603,7 @@ const ProductDetails = () => {
                                 <div className="flex gap-2 mb-4">
                                     {review.images.map((img, idx) => (
                                         <div key={idx} className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                                            <img src={img} alt="Review" className="w-full h-full object-cover" />
+                                            <img src={img} alt="Review" loading="lazy" className="w-full h-full object-cover" />
                                         </div>
                                     ))}
                                 </div>
@@ -681,7 +681,7 @@ const ProductDetails = () => {
                                         <div className="flex gap-2 mb-4">
                                             {review.images.map((img, idx) => (
                                                 <div key={idx} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
-                                                    <img src={img} alt="Review" className="w-full h-full object-cover" />
+                                                    <img src={img} alt="Review" loading="lazy" className="w-full h-full object-cover" />
                                                 </div>
                                             ))}
                                         </div>
@@ -777,19 +777,19 @@ const ProductDetails = () => {
             <div style={{ backgroundColor: 'rgb(231, 238, 255)' }} className="py-4 mb-4 flex justify-between px-4 -mx-4">
                 <div className="flex flex-col items-center gap-2 text-center flex-1 border-r border-[#d4dbe8] last:border-0">
                     <div className="bg-white p-2 rounded-full shadow-sm w-10 h-10 flex items-center justify-center">
-                        <img src="/assets/lowest_price_user.png" alt="Lowest Price" className="w-full h-full object-contain" />
+                        <img src="/assets/lowest_price_user.png" alt="Lowest Price" loading="lazy" className="w-full h-full object-contain" />
                     </div>
                     <span className="text-[12px] text-gray-800 font-medium">Lowest Price</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 text-center flex-1 border-r border-[#d4dbe8] last:border-0">
                     <div className="bg-white p-2 rounded-full shadow-sm w-10 h-10 flex items-center justify-center">
-                        <img src="/assets/cod_user.png" alt="COD" className="w-full h-full object-contain" />
+                        <img src="/assets/cod_user.png" alt="COD" loading="lazy" className="w-full h-full object-contain" />
                     </div>
                     <span className="text-[12px] text-gray-800 font-medium">Cash on Delivery</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 text-center flex-1">
                     <div className="bg-white p-2 rounded-full shadow-sm w-10 h-10 flex items-center justify-center">
-                        <img src="/assets/returns_user.png" alt="Returns" className="w-full h-full object-contain" />
+                        <img src="/assets/returns_user.png" alt="Returns" loading="lazy" className="w-full h-full object-contain" />
                     </div>
                     <span className="text-[12px] text-gray-800 font-medium">7-day Returns</span>
                 </div>

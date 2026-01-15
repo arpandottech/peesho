@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { XIcon, PlusIcon, MinusIcon, TrashIcon } from "@heroicons/react/solid";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../CartContext";
 
 const Addcart = () => {
-  const location = useLocation();
   // const product = location.state?.product;
   const navigate = useNavigate();
 
