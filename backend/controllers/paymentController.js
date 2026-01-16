@@ -211,13 +211,60 @@ const processPayUTransaction = async (params) => {
 
     const calculatedHash = crypto.createHash('sha512').update(hashString).digest('hex');
 
+    // 4. S2S Verification (The Safety Net)
+    // If hash matches, we're good. If NOT, or if we want to be 100% sure, we ask PayU.
+    // For this fix: If hash fails, we check S2S.
+
+    // Helper to check PayU Server
+    const verifyTransactionWithPayU = async (txnId) => {
+        try {
+            const command = 'verify_payment';
+            const s2sHashString = `${key}|${command}|${txnId}|${salt}`;
+            const s2sHash = crypto.createHash('sha512').update(s2sHashString).digest('hex');
+
+            const prodUrl = 'https://info.payu.in/merchant/postservice.php?form=2';
+            const testUrl = 'https://test.payu.in/merchant/postservice.php?form=2';
+            // Simple heuristic to guess URL based on PAYU_URL env or default to Prod for safety if unsure
+            // Ideally we should have a PAYU_INFO_URL env, but let's default to production if not 'test' in PAYU_URL
+            const isTest = (process.env.PAYU_URL || '').includes('test');
+            const url = isTest ? testUrl : prodUrl;
+
+            const formData = new URLSearchParams();
+            formData.append('key', key);
+            formData.append('hash', s2sHash);
+            formData.append('var1', txnId);
+            formData.append('command', command);
+
+            console.log(`[S2S] Checking status for ${txnId} at ${url}`);
+            const response = await axios.post(url, formData);
+            return response.data;
+        } catch (err) {
+            console.error(`[S2S Error] ${err.message}`);
+            return null;
+        }
+    };
+
     if (calculatedHash !== hash) {
-        console.error(`[PayU Security Risk] Hash Mismatch!`);
-        console.error(`Received Hash: ${hash}`);
-        console.error(`Calculated String: ${hashString}`);
-        console.error(`Calculated Hash: ${calculatedHash}`);
-        console.error(`Params:`, JSON.stringify(params));
-        return { success: false, reason: 'security_error', message: 'Hash Mismatch' };
+        console.error(`[PayU Security Warning] Browser Hash Mismatch! Checking Server-to-Server...`);
+        console.error(`Received: ${hash}, Calc: ${calculatedHash}`);
+
+        // Fallback to S2S
+        const s2sData = await verifyTransactionWithPayU(txnid);
+
+        let verifiedViaS2S = false;
+        if (s2sData && s2sData.status === 1 && s2sData.transaction_details && s2sData.transaction_details[txnid]) {
+            const txnDetails = s2sData.transaction_details[txnid];
+            if (txnDetails.status === 'success') {
+                console.log(`[S2S Success] Transaction ${txnid} verified via PayU API. Ignoring hash mismatch.`);
+                verifiedViaS2S = true;
+            }
+        }
+
+        if (!verifiedViaS2S) {
+            console.error(`[PayU Failure] Hash mismatched AND S2S verification failed/returned non-success.`);
+            return { success: false, reason: 'security_error', message: 'Payment Verification Failed (Security)' };
+        }
+        // If verifiedViaS2S is true, we proceed below as if nothing happened.
     }
 
     // 2. Find Order
