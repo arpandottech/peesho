@@ -74,7 +74,9 @@ const corsOptions = async (req, callback) => {
 
 const rateLimit = require('express-rate-limit');
 
-// ... imports ...
+// Initialize Express App
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.set('trust proxy', 1); // Trust first proxy (needed for req.ip behind VHost)
@@ -373,6 +375,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', strictLimiter, paymentRoutes);
 app.use('/api/brand', strictLimiter, brandRoutes);
+app.use('/api/domains', domainRoutes);
 
 // --- Wishlist Routes ---
 
