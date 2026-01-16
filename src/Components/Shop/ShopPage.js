@@ -22,7 +22,8 @@ const ShopPage = () => {
         const fetchProducts = async () => {
             try {
                 const res = await axios.get(`${config.API_URL}/products`);
-                setProducts(res.data);
+                const productList = res.data.products || (Array.isArray(res.data) ? res.data : []);
+                setProducts(productList);
             } catch (err) {
                 console.error("Error fetching products", err);
             } finally {
