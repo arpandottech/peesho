@@ -326,7 +326,7 @@ app.get('/api/products', async (req, res) => {
         const maxLimit = Math.min(parseInt(limit), 100); // Cap at 100
 
         const products = await Product.find(query)
-            .select('title price discountPrice image category ratings') // Field selection
+            .select('title price discountPrice images type variations category rating reviews') // Include all needed fields
             .populate('category', 'name parentCategory') // Only needed fields
             .skip(skip)
             .limit(maxLimit)
