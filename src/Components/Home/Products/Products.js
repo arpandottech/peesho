@@ -50,7 +50,12 @@ const Products = () => {
         const prodResponse = await fetch(`${config.API_URL}/products`);
         let prodData = await prodResponse.json();
 
-        if (Array.isArray(prodData)) {
+        // Handle paginated response format: { products: [...], pagination: {...} }
+        if (prodData.products && Array.isArray(prodData.products)) {
+          setProducts(prodData.products);
+          setFilteredProducts(prodData.products);
+        } else if (Array.isArray(prodData)) {
+          // Fallback for direct array response
           setProducts(prodData);
           setFilteredProducts(prodData);
         } else {

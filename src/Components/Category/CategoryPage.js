@@ -107,8 +107,20 @@ const CategoryPage = () => {
                 // Using a query param or specific endpoint as per typical patterns
                 // Adjust endpoint based on actual backend API
                 const productRes = await axios.get(`${config.API_URL}/products?category=${categoryId}`);
-                setProducts(productRes.data);
-                setFilteredProducts(productRes.data);
+
+                // Handle paginated response format: { products: [...], pagination: {...} }
+                if (productRes.data.products && Array.isArray(productRes.data.products)) {
+                    setProducts(productRes.data.products);
+                    setFilteredProducts(productRes.data.products);
+                } else if (Array.isArray(productRes.data)) {
+                    // Fallback for direct array response
+                    setProducts(productRes.data);
+                    setFilteredProducts(productRes.data);
+                } else {
+                    console.error("Products API did not return expected format:", productRes.data);
+                    setProducts([]);
+                    setFilteredProducts([]);
+                }
 
                 // Fetch Category Name if possible, or maybe we passed it in state
                 // Trying to fetch specific category details if endpoint exists
