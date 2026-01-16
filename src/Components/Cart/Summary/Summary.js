@@ -85,8 +85,8 @@ const Summary = () => {
 
         if (isOnline) {
             setIsLoading(true);
-            // 1. Create PENDING Order
-            const newOrder = await createBackendOrder('PENDING');
+            // 1. Create PAYMENT_PENDING Order
+            const newOrder = await createBackendOrder('PAYMENT_PENDING');
             if (!newOrder) {
                 setIsLoading(false);
                 return;
@@ -151,7 +151,7 @@ const Summary = () => {
 
         } else {
             // Cash on Delivery
-            const newOrder = await createBackendOrder('SUCCESS');
+            const newOrder = await createBackendOrder('PAYMENT_SUCCESS');
             navigate("/thankyou", {
                 state: {
                     amount: finalAmount,
