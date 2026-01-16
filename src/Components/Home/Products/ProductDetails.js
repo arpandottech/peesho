@@ -77,7 +77,11 @@ const ProductDetails = () => {
         // Fetch random products for "People also viewed"
         axios.get(`${config.API_URL}/products`)
             .then(res => {
-                const allProducts = res.data;
+                // Handle paginated response
+                const allProducts = res.data.products && Array.isArray(res.data.products)
+                    ? res.data.products
+                    : (Array.isArray(res.data) ? res.data : []);
+
                 // Shuffle and pick 4
                 const shuffled = allProducts.sort(() => 0.5 - Math.random());
                 setSimilarProducts(shuffled.slice(0, 4));

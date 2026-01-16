@@ -174,17 +174,27 @@ const AdminPanel = () => {
             ]);
             setCategories(Array.isArray(catRes.data) ? catRes.data : []);
             setParentCategories(Array.isArray(parentCatRes.data) ? parentCatRes.data : []);
-            setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
-            setOrders(Array.isArray(orderRes.data) ? orderRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []);
+
+            // Handle paginated products response
+            const productsData = prodRes.data.products && Array.isArray(prodRes.data.products)
+                ? prodRes.data.products
+                : (Array.isArray(prodRes.data) ? prodRes.data : []);
+            setProducts(productsData);
+
+            // Handle paginated orders response
+            const ordersData = orderRes.data.orders && Array.isArray(orderRes.data.orders)
+                ? orderRes.data.orders
+                : (Array.isArray(orderRes.data) ? orderRes.data : []);
+            setOrders(ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
             const users = Array.isArray(userRes.data) ? userRes.data : [];
 
             setStats({
                 categories: Array.isArray(catRes.data) ? catRes.data.length : 0,
                 parents: Array.isArray(parentCatRes.data) ? parentCatRes.data.length : 0,
-                products: Array.isArray(prodRes.data) ? prodRes.data.length : 0,
+                products: productsData.length,
                 users: users.length,
-                orders: Array.isArray(orderRes.data) ? orderRes.data.length : 0
+                orders: ordersData.length
             });
 
         } catch (err) {
