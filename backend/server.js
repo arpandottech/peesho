@@ -233,13 +233,14 @@ app.get('/api/parent-categories', async (req, res) => {
         const cached = appCache.get('all_parent_categories');
         if (cached) return res.json(cached);
 
-        const items = await ParentCategory.find();
+        const items = await ParentCategory.find().lean();
 
         // Set Cache
         appCache.set('all_parent_categories', items);
 
         res.json(items);
     } catch (err) {
+        console.error('Error fetching parent categories:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -266,13 +267,16 @@ app.get('/api/categories', async (req, res) => {
         const cached = appCache.get('all_categories');
         if (cached) return res.json(cached);
 
-        const categories = await Category.find().populate('parentCategory');
+        const categories = await Category.find()
+            .populate('parentCategory')
+            .lean(); // Convert to plain objects
 
         // Set Cache
         appCache.set('all_categories', categories);
 
         res.json(categories);
     } catch (err) {
+        console.error('Error fetching categories:', err);
         res.status(500).json({ error: err.message });
     }
 });
