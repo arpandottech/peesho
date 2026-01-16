@@ -202,7 +202,8 @@ const processPayUTransaction = async (params) => {
     const salt = process.env.PAYU_SALT;
 
     // 1. Verify Hash
-    const { udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 } = params;
+    // We already have udf1 in params, but let's grab all 10 for hash construction
+    const { udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 } = params;
     let hashString = `${salt}|${status}|${udf10 || ''}|${udf9 || ''}|${udf8 || ''}|${udf7 || ''}|${udf6 || ''}|${udf5 || ''}|${udf4 || ''}|${udf3 || ''}|${udf2 || ''}|${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
 
     if (params.additionalCharges) {
