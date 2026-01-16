@@ -202,7 +202,7 @@ const processPayUTransaction = async (params) => {
     const salt = process.env.PAYU_SALT;
 
     // 1. Verify Hash
-    const hashString = `${salt}|${status}||||||${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
+    const hashString = `${salt}|${status}||||||||||${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
     const calculatedHash = crypto.createHash('sha512').update(hashString).digest('hex');
 
     if (calculatedHash !== hash) {
