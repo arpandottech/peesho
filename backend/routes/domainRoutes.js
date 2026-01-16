@@ -8,5 +8,6 @@ router.get('/:id/status', domainController.checkStatus);
 router.put('/:id/toggle', domainController.toggleStatus);
 router.post('/:id/retry', domainController.retryProvisioning);
 router.delete('/:id', domainController.deleteDomain);
+router.put('/:id', domainController.updateDomain);
 
 module.exports = router;

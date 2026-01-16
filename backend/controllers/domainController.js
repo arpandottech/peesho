@@ -135,6 +135,28 @@ exports.checkStatus = async (req, res) => {
     }
 };
 
+// Update Domain (meta_pixel_id, etc.)
+exports.updateDomain = async (req, res) => {
+    try {
+        const { meta_pixel_id } = req.body;
+        const domain = await Domain.findByIdAndUpdate(
+            req.params.id,
+            { meta_pixel_id },
+            { new: true }
+        );
+
+        if (!domain) return res.status(404).json({ error: "Domain not found" });
+
+        // Invalidate Cache
+        appCache.del(`domain_status_${req.params.id}`);
+        appCache.del(`brand_config_${domain.domain_name}`);
+
+        res.json(domain);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // Toggle Domain Access Status (Active/Inactive)
 exports.toggleStatus = async (req, res) => {
     try {
