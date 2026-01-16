@@ -205,7 +205,7 @@ const processPayUTransaction = async (params) => {
     let hashString = `${salt}|${status}||||||||||${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
 
     if (params.additionalCharges) {
-        hashString += `|${params.additionalCharges}`;
+        hashString = `${params.additionalCharges}|${hashString}`;
     }
 
     const calculatedHash = crypto.createHash('sha512').update(hashString).digest('hex');
