@@ -156,6 +156,27 @@ exports.toggleStatus = async (req, res) => {
     }
 };
 
+// Retry Provisioning
+exports.retryProvisioning = async (req, res) => {
+    try {
+        const domain = await Domain.findById(req.params.id);
+        if (!domain) return res.status(404).json({ error: "Domain not found" });
+
+        // Reset provisioning statuses to pending
+        domain.apache_status = 'pending';
+        domain.ssl_status = 'pending';
+        await domain.save();
+
+        // Invalidate cache
+        appCache.del(`domain_status_${req.params.id}`);
+        appCache.del(`brand_config_${domain.domain_name}`);
+
+        res.json({ message: "Provisioning retry initiated", domain });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // Delete Domain
 exports.deleteDomain = async (req, res) => {
     try {
