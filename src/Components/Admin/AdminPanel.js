@@ -141,6 +141,19 @@ const AdminPanel = () => {
             alert("Failed to delete domain");
         }
     };
+
+    const handleEditPixelId = async (domainId, domainName, currentPixelId) => {
+        const newPixelId = prompt(`Enter Meta Pixel ID for ${domainName}:`, currentPixelId || '');
+        if (newPixelId !== null && newPixelId !== currentPixelId) {
+            try {
+                await axios.put(`${config.API_URL}/domains/${domainId}`, { meta_pixel_id: newPixelId });
+                fetchDomains();
+                alert("Meta Pixel ID updated successfully!");
+            } catch (err) {
+                alert("Failed to update Meta Pixel ID: " + (err.response?.data?.error || err.message));
+            }
+        }
+    };
     const [reviewProduct, setReviewProduct] = useState('');
     const [reviewText, setReviewText] = useState('');
     const [reviewImage, setReviewImage] = useState('');
@@ -844,6 +857,12 @@ const AdminPanel = () => {
                                                                 Retry Setup
                                                             </button>
                                                         )}
+                                                        <button
+                                                            onClick={() => handleEditPixelId(d._id, d.domain_name, d.meta_pixel_id)}
+                                                            className="text-white bg-purple-500 hover:bg-purple-600 px-3 py-1 rounded text-xs transition-colors"
+                                                        >
+                                                            Edit Pixel
+                                                        </button>
                                                         <button
                                                             onClick={() => handleDeleteDomain(d._id)}
                                                             className="text-red-500 hover:text-red-700 text-xs font-medium"

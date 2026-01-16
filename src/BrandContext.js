@@ -14,9 +14,9 @@ export const BrandProvider = ({ children }) => {
     const [maintenanceMode, setMaintenanceMode] = useState(false);
 
     useEffect(() => {
-        const isProduction = config.ENV !== 'production' &&
-            window.location.hostname !== 'localhost' &&
-            window.location.hostname !== '127.0.0.1';
+        const isProduction = config.ENV === 'production' ||
+            (window.location.hostname !== 'localhost' &&
+                window.location.hostname !== '127.0.0.1');
 
         // Async Pixel Loading (Non-Blocking)
         const loadPixelScript = () => {
@@ -32,6 +32,7 @@ export const BrandProvider = ({ children }) => {
                     s.parentNode.insertBefore(t, s)
                 })(window, document, 'script',
                     'https://connect.facebook.net/en_US/fbevents.js');
+                console.log('📱 Meta Pixel script loaded');
             }
         };
 
@@ -58,11 +59,15 @@ export const BrandProvider = ({ children }) => {
 
                 // Defer Pixel Init (After UI Renders)
                 if (isProduction && response.data.meta_pixel_id) {
+                    console.log(`🎯 Initializing Meta Pixel for domain: ${window.location.hostname}`);
+                    console.log(`   Pixel ID: ${response.data.meta_pixel_id}`);
+
                     // Use requestIdleCallback to load pixel during idle time
                     const initPixel = () => {
                         if (window.fbq) {
                             window.fbq('init', response.data.meta_pixel_id);
                             window.fbq('track', 'PageView');
+                            console.log('✅ Meta Pixel initialized successfully!');
                         }
                     };
 
@@ -71,6 +76,8 @@ export const BrandProvider = ({ children }) => {
                     } else {
                         setTimeout(initPixel, 1000); // Fallback for older browsers
                     }
+                } else if (!response.data.meta_pixel_id) {
+                    console.log('ℹ️ No Meta Pixel ID configured for this domain');
                 }
 
             } catch (error) {
