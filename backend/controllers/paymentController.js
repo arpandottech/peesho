@@ -202,11 +202,20 @@ const processPayUTransaction = async (params) => {
     const salt = process.env.PAYU_SALT;
 
     // 1. Verify Hash
-    const hashString = `${salt}|${status}||||||||||${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
+    let hashString = `${salt}|${status}||||||||||${udf1 || ''}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
+
+    if (params.additionalCharges) {
+        hashString += `|${params.additionalCharges}`;
+    }
+
     const calculatedHash = crypto.createHash('sha512').update(hashString).digest('hex');
 
     if (calculatedHash !== hash) {
-        console.error(`Hash Mismatch: Received ${hash} vs Calculated ${calculatedHash}`);
+        console.error(`[PayU Security Risk] Hash Mismatch!`);
+        console.error(`Received Hash: ${hash}`);
+        console.error(`Calculated String: ${hashString}`);
+        console.error(`Calculated Hash: ${calculatedHash}`);
+        console.error(`Params:`, JSON.stringify(params));
         return { success: false, reason: 'security_error', message: 'Hash Mismatch' };
     }
 
